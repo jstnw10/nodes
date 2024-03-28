@@ -1,17 +1,23 @@
-import { Action, ActionPanel, Icon, LaunchType, List, LocalStorage, launchCommand } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  LaunchType,
+  List,
+  LocalStorage,
+  Toast,
+  launchCommand,
+  showToast,
+} from "@raycast/api";
 import { useFetch } from "@raycast/utils";
 import { ValidatorStats } from "./types";
-
-function slicePublicKey(publicKey: string) {
-  return `${publicKey.slice(0, 4)}...${publicKey.slice(-4)}`;
-}
 
 function ChangeValidatorCommand() {
   const { isLoading, data } = useFetch<ValidatorStats[]>("https://api.stakewiz.com/validators");
 
   return (
     <List isLoading={isLoading} isShowingDetail>
-      {!!data
+      {data
         ? data
             .sort((a, b) => b.activated_stake - a.activated_stake)
             ?.map((validator) => (
@@ -29,7 +35,12 @@ function ChangeValidatorCommand() {
                           "validator",
                           JSON.stringify({ address: validator.vote_identity, name: validator.name }),
                         ).then(() => {
-                          launchCommand({ name: "index", type: LaunchType.UserInitiated });
+                          showToast({
+                            title: "Validator changed",
+                            message: `Selected ${validator.name}`,
+                            style: Toast.Style.Success,
+                          });
+                          launchCommand({ name: "menuBarStats", type: LaunchType.UserInitiated });
                         });
                       }}
                     />
@@ -81,7 +92,7 @@ function ValidatorDetails(props: ValidatorDetailsProps) {
           <List.Item.Detail.Metadata.Label title="Voting Success Rate" text={`${validator.vote_success}%`} />
           <List.Item.Detail.Metadata.Label title="Uptime (30d)" text={`${validator.uptime}%`} />
           <List.Item.Detail.Metadata.Separator />
-          {!!validator.website && (
+          {validator.website && (
             <>
               <List.Item.Detail.Metadata.Link
                 title="Website"
