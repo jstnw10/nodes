@@ -11,7 +11,7 @@ import {
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
 import fetch from "node-fetch";
-import { ValidatorStats } from "./types";
+import { ActivatingDelta, ValidatorStats } from "./types";
 
 export default function Command() {
   const { isLoading, data } = useCachedPromise(async () => {
@@ -30,6 +30,22 @@ export default function Command() {
     return validatorData as unknown as ValidatorStats;
   }, []);
 
+  const { isLoading: isDeltaLoading, data: deltaData } = useCachedPromise(async () => {
+    const selectedValidator = await LocalStorage.getItem<string>("validator").then((v) =>
+      v
+        ? (JSON.parse(v) as {
+            address: string;
+            name: string;
+          })
+        : null,
+    );
+    const response = await fetch(
+      `https://api.stakewiz.com/validator_epoch_stake_accounts/${selectedValidator?.address ?? "VotESBSkLKU8vebS6wTR2rzWWJsLc6YThYS6tebPxXq"}`,
+    );
+    const validatorData = await response.json();
+    return validatorData as unknown as ActivatingDelta;
+  }, []);
+
   return (
     <MenuBarExtra title={isLoading ? data?.name ?? "Loading..." : data?.name} icon={data?.image} isLoading={isLoading}>
       {data && (
@@ -40,14 +56,6 @@ export default function Command() {
               title={`#${data?.rank.toString()}`}
               subtitle="Rank"
               onAction={() => Clipboard.copy(data?.rank.toString() ?? "")}
-            />
-            <CopyItemWithToast
-              icon={Icon.Weights}
-              title={`${data?.activated_stake.toLocaleString(undefined, {
-                maximumFractionDigits: 0,
-              })} SOL`}
-              subtitle="Stake"
-              onAction={() => Clipboard.copy(data?.activated_stake.toString() ?? "")}
             />
             <CopyItemWithToast
               icon={Icon.HardDrive}
@@ -61,6 +69,32 @@ export default function Command() {
               subtitle="APY"
               onAction={() => Clipboard.copy(data?.apy_estimate.toFixed(2) ?? "")}
             />
+            <CopyItemWithToast
+              icon={Icon.Weights}
+              title={`${data?.activated_stake.toLocaleString(undefined, {
+                maximumFractionDigits: 0,
+              })} SOL`}
+              subtitle="Stake"
+              onAction={() => Clipboard.copy(data?.activated_stake.toString() ?? "")}
+            />
+
+            <MenuBarExtra.Submenu title={`Stake Change`}>
+              <CopyItemWithToast
+                title={`${((deltaData?.activating.amount ?? 0) - (deltaData?.deactivating.amount ?? 0)).toFixed(2)} SOL`}
+                subtitle="Total Stake Change"
+              />
+              <MenuBarExtra.Separator />
+              <CopyItemWithToast
+                title={`${(deltaData?.activating.amount ?? 0).toFixed(2)} SOL`}
+                subtitle="Activating Stake"
+              />
+              <CopyItemWithToast title={`${deltaData?.activating.count}`} subtitle="Activating Stake Accounts" />
+              <CopyItemWithToast
+                title={`${(deltaData?.deactivating.amount ?? 0).toFixed(2)} SOL`}
+                subtitle="Deactivating Stake"
+              />
+              <CopyItemWithToast title={`${deltaData?.deactivating.count}`} subtitle="Activating Stake Accounts" />
+            </MenuBarExtra.Submenu>
           </MenuBarExtra.Section>
           <MenuBarExtra.Section title="Performance">
             <CopyItemWithToast icon={Icon.Gauge} title={`${data?.skip_rate.toFixed(2)}%`} subtitle="Skip rate" />

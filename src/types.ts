@@ -64,3 +64,48 @@ export type ValidatorStats = {
   credit_ratio: number;
   apy_estimate: number;
 };
+
+export interface ActivatingDelta {
+  activating: Activating;
+  deactivating: Deactivating;
+}
+interface Activating {
+  amount: number;
+  count: number;
+  stake_accounts: StakeAccountsItem[];
+}
+interface StakeAccountsItem {
+  pubkey: string;
+  delegated_amount: string;
+  activation_epoch: number;
+  deactivation_epoch: number;
+}
+interface Deactivating {
+  amount: number;
+  count: number;
+  stake_accounts: any[];
+}
+
+/*
+
+{
+    "activating": {
+        "amount": 78.000000001,
+        "count": 1,
+        "stake_accounts": [
+            {
+                "pubkey": "ERjNEPeM8p4jutwL2PjUQJNn9bWmhNmn6ZBq5QiDBPRG",
+                "delegated_amount": "78.000000001",
+                "activation_epoch": 599,
+                "deactivation_epoch": 0
+            }
+        ]
+    },
+    "deactivating": {
+        "amount": 0,
+        "count": 0,
+        "stake_accounts": []
+    }
+}
+
+*/
